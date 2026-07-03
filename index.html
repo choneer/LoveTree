@@ -1,14 +1,13 @@
-﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <!--
-    本项目基于 AJLoveChina/LoveTree 二次开发
+    基于 AJLoveChina/LoveTree 二次开发
     原仓库: https://github.com/AJLoveChina/LoveTree
-    旧版纪念页: /old
+    管理后台: ./admin.html
 -->
 <html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Our Story</title>
-
     <link type="text/css" rel="stylesheet" href="./index_files/default.css">
     <script type="text/javascript" src="./index_files/jquery.min.js"></script>
     <script type="text/javascript" src="./index_files/jscex.min.js"></script>
@@ -25,14 +24,12 @@
         .STYLE1 {
             color: #666666
         }
-
         -->
     </style>
 </head>
 <body>
-
-<img src="https://ajlovechina.github.io/loveBalloon/static/music.png" style="position: fixed;z-index: 10001;top:10px;right:10px;" onclick="let m = document.querySelector('.song-audio-autoplay'); if (m.paused ) {m.play(); this.className = 'rotateImages'} else {m.pause(); this.className = ''}">
-<audio class="song-audio-autoplay" controls loop style="display: none;visibility: hidden">
+<img id="music-btn" src="https://ajlovechina.github.io/loveBalloon/static/music.png" style="position: fixed;z-index: 10001;top:10px;right:10px;" onclick="let m = document.querySelector('.song-audio-autoplay'); if (m.paused ) {m.play(); this.className = 'rotateImages'} else {m.pause(); this.className = ''}">
+<audio class="song-audio-autoplay" controls loop preload="none" style="display: none;visibility: hidden">
     <source src="./index_files/music.mp3" type="audio/mp3"/>
 </audio>
 <style type="text/css">
@@ -51,7 +48,6 @@
         100%{ -webkit-transform: rotate(360deg);}
     }
 </style>
-
 <div id="main">
     <div id="error">本页面采用HTML5编辑，目前您的浏览器无法显示，请换成谷歌(<a
             href="http://www.google.cn/chrome/intl/zh-CN/landing_chrome.html?hl=zh-CN&brand=CHMI">Chrome</a>)或者火狐(<a
@@ -69,34 +65,42 @@
         </div>
         <canvas id="canvas" width="1100" height="680"></canvas>
     </div>
-
 </div>
-
 <script type="text/javascript">
     $('#code').html(config.lines.map(item => {
-        return `<span class="say">${item}</span><br>
-						<span class="say"> </span><br>`
+        return `<span class="say">${item}</span><br><span class="say"> </span><br>`
     }).reduce((a, b) => {
         return a + b;
     }))
     $("#clock-box-inside-text").html(`${config.names[0]}<span class="STYLE1">与</span> ${config.names[1]}<span class="STYLE1">已经相恋了</span>`)
 </script>
-
+<script>
+    // BGM 控制: config.bgm === false 时隐藏音乐图标
+    if (typeof config !== 'undefined' && config.bgm === false) {
+        var musicBtn = document.getElementById('music-btn');
+        if (musicBtn) musicBtn.style.display = 'none';
+    }
+</script>
 <script>
     (function () {
-        var canvas = $('#canvas');
+        // 树动画速度倍率 (越大越慢, 1=默认)
+        var treeSpeedMul = (typeof config !== 'undefined' && config.treeSpeed) ? config.treeSpeed : 1;
+        if (treeSpeedMul < 0.1) treeSpeedMul = 0.1;
+        if (treeSpeedMul > 10) treeSpeedMul = 10;
+        // 文字打字机速度倍率 (越大越慢, 1=默认)
+        var textSpeedMul = (typeof config !== 'undefined' && config.textSpeed) ? config.textSpeed : 1;
+        if (textSpeedMul < 0.1) textSpeedMul = 0.1;
+        if (textSpeedMul > 10) textSpeedMul = 10;
 
+        var canvas = $('#canvas');
         if (!canvas[0].getContext) {
             $("#error").show();
             return false;
         }
-
         var width = canvas.width();
         var height = canvas.height();
-
         canvas.attr("width", width);
         canvas.attr("height", height);
-
         var opts = {
             seed: {
                 x: width / 2 - 20,
@@ -132,12 +136,10 @@
                 speed: 10,
             }
         }
-
         var tree = new Tree(canvas[0], width, height, opts);
         var seed = tree.seed;
         var foot = tree.footer;
         var hold = 1;
-
         canvas.click(function (e) {
             var offset = canvas.offset(), x, y;
             x = e.pageX - offset.left;
@@ -154,91 +156,80 @@
             y = e.pageY - offset.top;
             canvas.toggleClass('hand', seed.hover(x, y));
         });
-
         var seedAnimate = eval(Jscex.compile("async", function () {
             seed.draw();
             while (hold) {
-                $await(Jscex.Async.sleep(10));
+                $await(Jscex.Async.sleep(10 * treeSpeedMul));
             }
             while (seed.canScale()) {
                 seed.scale(0.95);
-                $await(Jscex.Async.sleep(10));
+                $await(Jscex.Async.sleep(10 * treeSpeedMul));
             }
             while (seed.canMove()) {
                 seed.move(0, 2);
                 foot.draw();
-                $await(Jscex.Async.sleep(10));
+                $await(Jscex.Async.sleep(10 * treeSpeedMul));
             }
         }));
-
         var growAnimate = eval(Jscex.compile("async", function () {
             do {
                 tree.grow();
-                $await(Jscex.Async.sleep(10));
+                $await(Jscex.Async.sleep(10 * treeSpeedMul));
             } while (tree.canGrow());
         }));
-
         var flowAnimate = eval(Jscex.compile("async", function () {
             do {
                 tree.flower(2);
-                $await(Jscex.Async.sleep(10));
+                $await(Jscex.Async.sleep(10 * treeSpeedMul));
             } while (tree.canFlower());
         }));
-
         var moveAnimate = eval(Jscex.compile("async", function () {
             tree.snapshot("p1", 240, 0, 610, 680);
             while (tree.move("p1", 500, 0)) {
                 foot.draw();
-                $await(Jscex.Async.sleep(10));
+                $await(Jscex.Async.sleep(10 * treeSpeedMul));
             }
             foot.draw();
             tree.snapshot("p2", 500, 0, 610, 680);
-
             // 会有闪烁不得意这样做, (＞﹏＜)
             canvas.parent().css("background", "url(" + tree.toDataURL('image/png') + ")");
             canvas.css("background", "#ffe");
-            $await(Jscex.Async.sleep(300));
+            $await(Jscex.Async.sleep(300 * treeSpeedMul));
             canvas.css("background", "none");
         }));
-
         var jumpAnimate = eval(Jscex.compile("async", function () {
             var ctx = tree.ctx;
             while (true) {
                 tree.ctx.clearRect(0, 0, width, height);
                 tree.jump();
                 foot.draw();
-                $await(Jscex.Async.sleep(25));
+                $await(Jscex.Async.sleep(25 * treeSpeedMul));
             }
         }));
-
         var textAnimate = eval(Jscex.compile("async", function () {
             var together = new Date(config.date);
-
-            $("#code").show().typewriter();
+            $("#code").show().typewriter(75 * textSpeedMul);
             $("#clock-box").fadeIn(500);
             while (true) {
                 timeElapse(together);
                 $await(Jscex.Async.sleep(1000));
             }
         }));
-
         var runAsync = eval(Jscex.compile("async", function () {
             $await(seedAnimate());
             $await(growAnimate());
             $await(flowAnimate());
             $await(moveAnimate());
-
             textAnimate().start();
-
             $await(jumpAnimate());
         }));
-
         runAsync().start();
     })();
 </script>
 
-<div style="position: fixed; bottom: 5px; right: 10px; z-index: 10001; font-size: 12px; color: #999; opacity: 0.6;">
-    基于 <a href="https://github.com/AJLoveChina/LoveTree" target="_blank" style="color: #999;">AJLoveChina/LoveTree</a> 二开
+<div style="position: fixed; bottom: 5px; right: 10px; z-index: 10001; font-size: 10px; color: #999; opacity: 0.3;">
+    <a href="./admin.html" style="color: #999;">管理</a> |
+    <a href="https://github.com/AJLoveChina/LoveTree" target="_blank" style="color: #999;">基于 AJLoveChina/LoveTree</a>
 </div>
 
 </body>

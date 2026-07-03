@@ -16,7 +16,8 @@ $(window).resize(function() {
 });
 
 (function($) {
-	$.fn.typewriter = function() {
+	$.fn.typewriter = function(speed) {
+		speed = speed || 75;
 		this.each(function() {
 			var $ele = $(this), str = $ele.html(), progress = 0;
 			$ele.html('');
@@ -31,7 +32,7 @@ $(window).resize(function() {
 				if (progress >= str.length) {
 					clearInterval(timer);
 				}
-			}, 75);
+			}, speed);
 		});
 		return this;
 	};
